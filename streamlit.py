@@ -1,36 +1,14 @@
 import streamlit as st
 import pandas as pd
-import statsmodels.formula.api as smf
 import plotly.express as px
-import matplotlib.pyplot as plt
-import seaborn as sns
 from io import BytesIO
 import requests
-from sklearn.preprocessing import LabelEncoder
 
 # App Title
-st.title("Career Accelerator Program Dashboard")
+st.title("Career Accelerator Program Dashboard - Basic Visualization")
 
 # Dataset URL (GitHub raw URL)
 dataset_url = 'https://raw.githubusercontent.com/vaidyamohit/Marketing-Dashboard/main/Dataset%20Marketing.xlsx'
-
-@st.cache
-def fetch_sheet_names(url):
-    """Fetch sheet names for debugging."""
-    response = requests.get(url)
-    if response.status_code == 200:
-        file = BytesIO(response.content)
-        excel_file = pd.ExcelFile(file)
-        return excel_file.sheet_names
-    else:
-        return None
-
-# Debugging Step: Fetch and Display Sheet Names
-sheet_names = fetch_sheet_names(dataset_url)
-if sheet_names:
-    st.write("Available Sheets in the Dataset:", sheet_names)
-else:
-    st.error("Could not fetch sheet names. Please check the dataset URL.")
 
 @st.cache
 def load_data_from_url(url):
@@ -39,89 +17,22 @@ def load_data_from_url(url):
     if response.status_code == 200:
         file = BytesIO(response.content)
         customer_info = pd.read_excel(file, sheet_name='Customer Information')  # Update name if incorrect
-        competitor_info = pd.read_excel(file, sheet_name='Competitor Information')  # Update name if incorrect
-        marketing_data = pd.read_excel(file, sheet_name='Marketing Data')  # Update name if incorrect
-        survey_data = pd.read_excel(file, sheet_name='Survey Data')  # Update name if incorrect
-        enrollment_data = pd.read_excel(file, sheet_name='Enrollment and Revenue Metrics')  # Update name if incorrect
-        return customer_info, competitor_info, marketing_data, survey_data, enrollment_data
+        return customer_info
     else:
         st.error("Failed to fetch the dataset. Please check the URL.")
-        return None, None, None, None, None
+        return None
 
 # Load the data
-customer_info, competitor_info, marketing_data, survey_data, enrollment_data = load_data_from_url(dataset_url)
+customer_info = load_data_from_url(dataset_url)
 
 if customer_info is not None:
-    # Sidebar Filters
-    st.sidebar.header("Filters")
-    age_filter = st.sidebar.slider("Age Range", int(customer_info['Age'].min()), int(customer_info['Age'].max()), (25, 40))
-    gender_filter = st.sidebar.multiselect("Gender", customer_info['Gender'].unique(), default=customer_info['Gender'].unique())
-    education_filter = st.sidebar.multiselect("Education Level", customer_info['Education Level'].unique())
-    industry_filter = st.sidebar.multiselect("Industry", customer_info['Industry'].unique())
+    # Display the dataset
+    st.subheader("Dataset Preview")
+    st.write(customer_info.head())
 
-    # Apply Filters
-    filtered_data = customer_info[
-        (customer_info['Age'] >= age_filter[0]) &
-        (customer_info['Age'] <= age_filter[1]) &
-        (customer_info['Gender'].isin(gender_filter)) &
-        (customer_info['Education Level'].isin(education_filter if education_filter else customer_info['Education Level'])) &
-        (customer_info['Industry'].isin(industry_filter if industry_filter else customer_info['Industry']))
-    ]
-
-    # Display Filtered Data
-    st.subheader("Filtered Customer Data")
-    st.write(filtered_data)
-
-    # Competitor Analysis
-    st.subheader("Competitor Pricing Insights")
-    competitor_chart = competitor_info.groupby('Competitor Name').agg({'Course Price': 'mean', 'Enrollment Numbers': 'sum'})
-    st.bar_chart(competitor_chart)
-
-    # Marketing Campaign Performance
-    st.subheader("Marketing Campaign Performance")
-    marketing_summary = marketing_data.groupby('Campaign Type').agg({'Ad Spend': 'sum', 'CTR': 'mean', 'Conversion Rate': 'mean'})
-    st.line_chart(marketing_summary[['Ad Spend', 'CTR', 'Conversion Rate']])
-
-    # Survey Insights
-    st.subheader("Survey Insights")
-    feature_importance = survey_data[['Feature Importance (Mentorship)', 'Feature Importance (Projects)', 'Feature Importance (Job Assistance)']].mean()
-    st.write(feature_importance)
-    st.bar_chart(feature_importance)
-
-    # Enrollment and Revenue
-    st.subheader("Enrollment and Revenue Insights")
-    enrollment_summary = enrollment_data.groupby('Enrollment Date').agg({'Revenue Per Customer': 'sum', 'Cost Per Acquisition (CPA)': 'mean'})
-    st.area_chart(enrollment_summary)
-
-    # Predictive Model for Enrollment Value
-    st.header("Predictive Model for Enrollment Revenue")
-    lin_reg_model = smf.ols('Revenue Per Customer ~ Discount Applied + Payment Mode + Cost Per Acquisition (CPA)', data=enrollment_data).fit()
-
-    discount = st.number_input("Enter Discount Applied (in %):", min_value=0.0, value=10.0, step=0.1)
-    payment_mode = st.selectbox("Select Payment Mode:", options=enrollment_data['Payment Mode'].unique())
-    cpa = st.number_input("Enter Cost Per Acquisition (CPA):", min_value=0.0, value=50.0, step=0.1)
-
-    predict_button = st.button("Predict Enrollment Revenue")
-
-    if predict_button:
-        input_data = pd.DataFrame({
-            'Discount Applied': [discount],
-            'Payment Mode': [payment_mode],
-            'Cost Per Acquisition (CPA)': [cpa]
-        })
-
-        prediction = lin_reg_model.predict(input_data)
-        st.success(f"Predicted Enrollment Revenue: ${prediction.iloc[0]:,.2f}")
-
-    # KPI Metrics
-    st.sidebar.header("Key Metrics")
-    total_revenue = enrollment_data['Revenue Per Customer'].sum()
-    avg_cpa = enrollment_data['Cost Per Acquisition (CPA)'].mean()
-    roi = enrollment_data['ROI by Channel'].mean()
-
-    st.sidebar.metric("Total Revenue", f"${total_revenue:,.2f}")
-    st.sidebar.metric("Average CPA", f"${avg_cpa:,.2f}")
-    st.sidebar.metric("Average ROI", f"{roi:.2%}")
-
+    # Basic Graph: Distribution of Ages
+    st.subheader("Basic Graph: Age Distribution of Customers")
+    fig = px.histogram(customer_info, x='Age', nbins=20, title='Age Distribution of Customers')
+    st.plotly_chart(fig)
 else:
-    st.info("Dataset not loaded. Please check the URL or dataset format.")
+    st.error("Dataset could not be loaded. Please check the file path or dataset.")
