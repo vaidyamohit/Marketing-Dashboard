@@ -10,16 +10,34 @@ st.title("Career Accelerator Program Dashboard")
 dataset_url = 'https://raw.githubusercontent.com/vaidyamohit/Marketing-Dashboard/main/Dataset%20Marketing.xlsx'
 
 @st.cache
+def fetch_sheet_names(url):
+    """Fetch sheet names for debugging."""
+    response = requests.get(url)
+    if response.status_code == 200:
+        file = BytesIO(response.content)
+        excel_file = pd.ExcelFile(file)
+        return excel_file.sheet_names
+    else:
+        return None
+
+# Debugging Step: Fetch and Display Sheet Names
+sheet_names = fetch_sheet_names(dataset_url)
+if sheet_names:
+    st.write("Available Sheets in the Dataset:", sheet_names)
+else:
+    st.error("Could not fetch sheet names. Please check the dataset URL.")
+
+@st.cache
 def load_data_from_url(url):
     """Fetch and load Excel sheets as DataFrames from a URL."""
     response = requests.get(url)
     if response.status_code == 200:
         file = BytesIO(response.content)
-        customer_info = pd.read_excel(file, sheet_name='Customer Information')
-        competitor_info = pd.read_excel(file, sheet_name='Competitor Information')
-        marketing_data = pd.read_excel(file, sheet_name='Marketing Data')
-        survey_data = pd.read_excel(file, sheet_name='Survey Data')
-        enrollment_data = pd.read_excel(file, sheet_name='Enrollment and Revenue Metrics')
+        customer_info = pd.read_excel(file, sheet_name='Customer Information')  # Update name if incorrect
+        competitor_info = pd.read_excel(file, sheet_name='Competitor Information')  # Update name if incorrect
+        marketing_data = pd.read_excel(file, sheet_name='Marketing Data')  # Update name if incorrect
+        survey_data = pd.read_excel(file, sheet_name='Survey Data')  # Update name if incorrect
+        enrollment_data = pd.read_excel(file, sheet_name='Enrollment and Revenue Metrics')  # Update name if incorrect
         return customer_info, competitor_info, marketing_data, survey_data, enrollment_data
     else:
         st.error("Failed to fetch the dataset. Please check the URL.")
