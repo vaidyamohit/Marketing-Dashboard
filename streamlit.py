@@ -1,7 +1,12 @@
 import streamlit as st
 import pandas as pd
-import requests
+import statsmodels.formula.api as smf
+import plotly.express as px
+import matplotlib.pyplot as plt
+import seaborn as sns
 from io import BytesIO
+import requests
+from sklearn.preprocessing import LabelEncoder
 
 # App Title
 st.title("Career Accelerator Program Dashboard")
@@ -88,7 +93,27 @@ if customer_info is not None:
     enrollment_summary = enrollment_data.groupby('Enrollment Date').agg({'Revenue Per Customer': 'sum', 'Cost Per Acquisition (CPA)': 'mean'})
     st.area_chart(enrollment_summary)
 
-    # KPIs
+    # Predictive Model for Enrollment Value
+    st.header("Predictive Model for Enrollment Revenue")
+    lin_reg_model = smf.ols('Revenue Per Customer ~ Discount Applied + Payment Mode + Cost Per Acquisition (CPA)', data=enrollment_data).fit()
+
+    discount = st.number_input("Enter Discount Applied (in %):", min_value=0.0, value=10.0, step=0.1)
+    payment_mode = st.selectbox("Select Payment Mode:", options=enrollment_data['Payment Mode'].unique())
+    cpa = st.number_input("Enter Cost Per Acquisition (CPA):", min_value=0.0, value=50.0, step=0.1)
+
+    predict_button = st.button("Predict Enrollment Revenue")
+
+    if predict_button:
+        input_data = pd.DataFrame({
+            'Discount Applied': [discount],
+            'Payment Mode': [payment_mode],
+            'Cost Per Acquisition (CPA)': [cpa]
+        })
+
+        prediction = lin_reg_model.predict(input_data)
+        st.success(f"Predicted Enrollment Revenue: ${prediction.iloc[0]:,.2f}")
+
+    # KPI Metrics
     st.sidebar.header("Key Metrics")
     total_revenue = enrollment_data['Revenue Per Customer'].sum()
     avg_cpa = enrollment_data['Cost Per Acquisition (CPA)'].mean()
@@ -97,5 +122,6 @@ if customer_info is not None:
     st.sidebar.metric("Total Revenue", f"${total_revenue:,.2f}")
     st.sidebar.metric("Average CPA", f"${avg_cpa:,.2f}")
     st.sidebar.metric("Average ROI", f"{roi:.2%}")
+
 else:
     st.info("Dataset not loaded. Please check the URL or dataset format.")
