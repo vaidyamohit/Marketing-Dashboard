@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 # Load data
 st.title("Career Accelerator Program Dashboard")
-uploaded_file = 'https://docs.google.com/spreadsheets/d/1NayIwpA6M2RZ3Z54NhH9cZKbWjflGt5c/edit?gid=1891518886#gid=1891518886'  # Update with the correct path for your setup
+uploaded_file = 'https://github.com/vaidyamohit/Marketing-Dashboard/blob/main/Dataset%20Marketing.xlsx'  # Update with the correct path for your setup
 
 @st.cache
 def load_data(file):
